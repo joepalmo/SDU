@@ -4,6 +4,7 @@ import math
 import datetime as dt
 import matplotlib.pyplot as plt
 from astropy.io import ascii
+import os
 
 # open source module found for converting MJD/JD to DateTimes
 import jdutil as jd
@@ -216,11 +217,16 @@ for n in names:
     phase_preproc_lc = LC_phasesort_preproc(lc, bins=phase_bins())
     phasefit_preproc_lc = LC_phasefit_preproc(lc_path, bins=phase_bins())
     preproc_spec = spectra_preproc(spec, bins=wavelength_bins())
+
+    #create output directory
+    outdir = 'preproc/{}/'.format(n)
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)    
     
     #save preprocessed files
-    time_preproc_lc.to_csv("preproc/{}_LC_timesort.csv".format(n), index=False)
-    phase_preproc_lc.to_csv("preproc/{}_LC_phasesort.csv".format(n), index=False)
-    phasefit_preproc_lc.to_csv("preproc/{}_LC_phasefit.csv".format(n), index=False)
-    preproc_spec.to_csv("preproc/{}_spec.csv".format(n), index=False)
+    time_preproc_lc.to_csv("preproc/{}/{}_LC_timesort.csv".format(n,n), index=False)
+    phase_preproc_lc.to_csv("preproc/{}/{}_LC_phasesort.csv".format(n,n), index=False)
+    phasefit_preproc_lc.to_csv("preproc/{}/{}_LC_phasefit.csv".format(n,n), index=False)
+    preproc_spec.to_csv("preproc/{}/{}_spec.csv".format(n,n), index=False)
 
 #preprocessed .csvs should be saved in *workingdirectory*/preproc/ folder
