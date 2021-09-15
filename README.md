@@ -8,7 +8,7 @@ For SDU, the sonification of astronomical data is done using [sonoUno](https://g
 
 ## Preprocessing
 
-Our raw lightcurve and spectra data was obtained from the Time-Domain Spectroscopic Survey -- a subproject of the Sloan Digital Sky Survey, which is perhaps the most successful observational surveys in the history of astronomy. From the lightcurves and spectral, we hope to obtain four types of sonified videos:
+Our raw lightcurve and spectra data was obtained from the Time-Domain Spectroscopic Survey -- a subproject of the Sloan Digital Sky Survey, which is perhaps the most successful observational survey in the history of astronomy. From the lightcurves and spectra, we hope to obtain four types of sonified videos:
 
 1. Lightcurve sorted by time of observation
 2. Phased lightcurve
