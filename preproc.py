@@ -186,11 +186,11 @@ def wavelength_bins():
 
 
 ################## START PREPROCESSING ###################
-path_to_data = "../TDSSforJoe_Jul28/"
+path_to_data = "TDSS_data/"
 
 #lightcurve paths
 lightcurves = glob.glob('{}*LC*.csv'.format(path_to_data))
-# remove extras / non Periodic variables
+# remove extras
 lightcurves = [ x for x in lightcurves if "Phase" not in x]
 lightcurves = [ x for x in lightcurves if "phase" not in x]
 
