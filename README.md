@@ -27,7 +27,7 @@ To run the preprocessing code, simply move into this directory and run:
 python preproc.py
 ```
 
-The four preprocessed .csvs for each type of object, ready to be input into sonoUno, should be 
+The four preprocessed .csvs for each type of object, ready to be input into sonoUno, should be generated within the preproc folder.
 
 ## To-Do
 
