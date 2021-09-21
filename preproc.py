@@ -42,7 +42,7 @@ def LC_timesort_preproc(df, resample_len='1d'):
     gaps = df.resample(resample_len).mean()
     gaps.reset_index(inplace=True)
     gaps['mjd_modified'] = gaps.timestamp.map(jd.datetime_to_jd).map(jd.jd_to_mjd)
-    gaps = gaps[['mjd_modified', 'mag', 'phase', 'mjd']]
+    gaps = gaps[['Modified Julian Day', 'Magnitude', 'phase', 'mjd']]
     
     return gaps
 
@@ -87,7 +87,7 @@ def LC_phasesort_preproc(df, bins=None):
 
     # back to df - name columns
     new_arr = np.vstack((bincenters, s)).T
-    new_df = pd.DataFrame(new_arr, columns = col[0:2])
+    new_df = pd.DataFrame(new_arr, columns = ['Phase', 'Magnitude'])
     
     return new_df
 
@@ -124,7 +124,7 @@ def spectra_preproc(df, bins=None):
     bincenters = edges[:-1]+np.diff(edges)/2
     # back to df - name columns
     new_arr = np.vstack((bincenters, s)).T
-    new_df = pd.DataFrame(new_arr, columns = col[0:2])
+    new_df = pd.DataFrame(new_arr, columns = ['Wavelength', 'Flux'])
     
     return new_df
 
@@ -173,7 +173,7 @@ def LC_phasefit_preproc(path_to_lc, bins=None):
     
     #to df - name columns
     new_arr = np.vstack((bincenters, s)).T
-    df = pd.DataFrame(new_arr, columns = ['phase', 'mag'])
+    df = pd.DataFrame(new_arr, columns = ['Phase', 'Magnitude'])
     
     return df
 
