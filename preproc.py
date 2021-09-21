@@ -42,7 +42,9 @@ def LC_timesort_preproc(df, resample_len='1d'):
     gaps = df.resample(resample_len).mean()
     gaps.reset_index(inplace=True)
     gaps['mjd_modified'] = gaps.timestamp.map(jd.datetime_to_jd).map(jd.jd_to_mjd)
-    gaps = gaps[['Modified Julian Day', 'Magnitude', 'phase', 'mjd']]
+    gaps = gaps[['mjd_modified', 'mag', 'phase', 'mjd']]
+    gaps.rename({'mjd_modified':'Modified Julian Day',
+                'mag': 'Magnitude'})
     
     return gaps
 
