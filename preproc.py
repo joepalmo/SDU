@@ -186,3 +186,53 @@ def phase_bins():
 def wavelength_bins():
     bins = np.arange(3790,7200,10)
     return bins
+
+
+
+################## PLOTTING ###################
+
+def plot_timesort(raw, preprocessed, **kwargs):
+    start = kwargs.pop("start", None)
+    end =  kwargs.pop("end", None)
+
+    raw_df = raw.copy(deep=True)
+    preproc_df = preprocessed.copy(deep=True)
+
+    if (start is not None) and (end is not None):
+        raw_df = raw_df[raw_df.mjd.between(start, end)]
+        preproc_df = preproc_df[preproc_df['Modified Julian Day'].between(start, end)]
+
+    fig, ax = plt.subplots()
+    ax.scatter(raw_df['mjd'], raw_df['mag'], label='raw', alpha=0.2, color='cornflowerblue')
+    ax.scatter(preproc_df['Modified Julian Day'], preproc_df['Magnitude'], 
+                alpha=0.2, label='preprocessed', color='salmon')
+    ax.invert_yaxis()
+    ax.set_xlabel('Modified Julian Day')
+    ax.set_ylabel('Magnitude')
+    ax.legend()
+    
+    fig.set_size_inches(7,5)
+    fig.set_dpi(120)
+    fig.patch.set_facecolor('white')
+
+    return fig
+
+
+def plot_spectra(raw, preprocessed, **kwargs):
+    raw_df = raw.copy(deep=True)
+    preproc_df = preprocessed.copy(deep=True)
+
+    fig, ax = plt.subplots()
+    ax.plot(raw_df['wavelength'], raw_df['flux'], label='raw', alpha=0.2, color='cornflowerblue')
+    ax.plot(preproc_df['Wavelength'], preproc_df['Flux'], 
+                alpha=0.2, label='preprocessed', color='salmon')
+    ax.set_xlabel('Wavelength')
+    ax.set_ylabel('Flux')
+    ax.set_xlim(3750, 7250)
+    ax.legend()
+    
+    fig.set_size_inches(7,5)
+    fig.set_dpi(120)
+    fig.patch.set_facecolor('white')
+
+    return fig
