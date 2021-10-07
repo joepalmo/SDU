@@ -11,11 +11,13 @@ For SDU, the sonification of astronomical data is done using [sonoUno](https://g
 Our raw lightcurve and spectra data was obtained from the Time-Domain Spectroscopic Survey -- a subproject of the Sloan Digital Sky Survey, which is perhaps the most successful observational survey in the history of astronomy. From the lightcurves and spectra, we hope to obtain four types of sonified videos:
 
 1. Lightcurve sorted by time of observation
-2. Phased lightcurve
-3. Fourier decomposed, phase fitted lightcurve
+2. Phased lightcurve<sup>*</sup>
+3. Fourier decomposed, phase fitted lightcurve<sup>*</sup>
 4. Spectrum
 
 Therefore, we preprocess the raw data in certain ways to ensure that the inputs to sonoUno will generate videos that are both scientifically accurate and aesthetically pleasing. That is the purpose of this repository.
+
+*8*<sup>*</sup>For periodic variables only***
 
 ## Running the Code
 
