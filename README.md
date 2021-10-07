@@ -17,7 +17,7 @@ Our raw lightcurve and spectra data was obtained from the Time-Domain Spectrosco
 
 Therefore, we preprocess the raw data in certain ways to ensure that the inputs to sonoUno will generate videos that are both scientifically accurate and aesthetically pleasing. That is the purpose of this repository.
 
-*8*<sup>*</sup>For periodic variables only***
+***<sup>*</sup>For periodic variables only***
 
 ## Running the Code
 
