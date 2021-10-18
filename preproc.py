@@ -54,7 +54,7 @@ from scipy.signal import savgol_filter
 
 # LC Phase Sort Preprocessing Function
 
-def LC_phasesort_preproc(df, bins=None):
+def LC_phasesort_preproc(df, bins=None, rephased=False):
     '''
     Function used to preprocess tabular lightcurve data before inputting them into sonoUno. This is
     done by binning the observations by to phase and averaging magnitude observations. This is 
@@ -90,6 +90,15 @@ def LC_phasesort_preproc(df, bins=None):
     # back to df - name columns
     new_arr = np.vstack((bincenters, s)).T
     new_df = pd.DataFrame(new_arr, columns = ['Phase', 'Magnitude'])
+
+    #rephase. set this to true if you would like to shift the phase curve 0.5 phases
+    if rephased:
+        rephase = new_df[new_df.Phase.between(0.505, 1.495)]['Magnitude'].to_numpy()
+        rephase = np.append(rephase, rephase)
+        rephase_arr = np.vstack((bincenters, rephase)).T
+        rephase_df = pd.DataFrame(rephase_arr, columns=['Phase', 'Magnitude'])
+
+        return rephase_df
     
     return new_df
 
@@ -131,7 +140,7 @@ def spectra_preproc(df, bins=None):
     return new_df
 
 
-def LC_phasefit_preproc(path_to_lc, bins=None):
+def LC_phasefit_preproc(path_to_lc, bins=None, rephased=False):
     '''
     Function used to fit a phase curve to tabular LC data before inputting them into sonoUno. This is
     done by using a LombScargle periodogram to obtain a period value, then using a Fourier Decomposition
@@ -176,6 +185,14 @@ def LC_phasefit_preproc(path_to_lc, bins=None):
     #to df - name columns
     new_arr = np.vstack((bincenters, s)).T
     df = pd.DataFrame(new_arr, columns = ['Phase', 'Magnitude'])
+
+    if rephased is True:
+        rephase = df[df.Phase.between(0.505, 1.495)]['Magnitude'].to_numpy()
+        rephase = np.append(rephase, rephase)
+        rephase_arr = np.vstack((bincenters, rephase)).T
+        rephase_df = pd.DataFrame(rephase_arr, columns=['Phase', 'Magnitude'])
+
+        return rephase_df
     
     return df
 
