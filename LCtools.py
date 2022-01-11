@@ -490,7 +490,10 @@ def process_LC(lc_data, fltRange=5.0, detrend=False, detrend_deg=3):
     lc_skew = skew(flc_mag)
 
     summation_eqn1 = np.sum(((flc_mag - fmagmn)**2) / (flc_err**2))
-    Chi2 = (1. / (flc_nmag - 1)) * summation_eqn1
+    if flc_nmag<=1:
+        Chi2 = np.inf
+    else:
+        Chi2 = (1. / (flc_nmag - 1)) * summation_eqn1
 
     properties = {'Tspan100':Tspan100, 'Tspan95':Tspan95, 'a95':a95, 'Mt':Mt, 'lc_skew':lc_skew,
                   'Chi2':Chi2, 'brtcutoff':brtcutoff, 'brt10per':brt10per, 'fnt10per':fnt10per,
@@ -562,16 +565,16 @@ def chisq(data, model):
 
 
 def perdiodSearch(lc_data, minP=0.1, maxP=100.0, alias_checks=[np.log10(0.5), np.log10(1.0), np.log10(3.0), np.log10(29.5306)], whitten=True, log10FAP=-10.0, aliasSampleRegion=0.05, checkHarmonic=True):
-    
-    lc_mjd = lc_data['mjd']
-    lc_mag = lc_data['mag']
-    lc_err = lc_data['magerr']
-
-    # assume all data is quality
-    #goodQualIndex = np.where(lc_data['QualFlag'] == 1)[0]
-    #lc_mjd = lc_data['mjd'][goodQualIndex]
-    #lc_mag = lc_data['mag'][goodQualIndex]
-    #lc_err = lc_data['magerr'][goodQualIndex]
+    #use QualFlag if the data has been processed with process_LC
+    try:
+        goodQualIndex = np.where(lc_data['QualFlag'] == True)[0]
+        lc_mjd = lc_data['mjd'][goodQualIndex]
+        lc_mag = lc_data['mag'][goodQualIndex]
+        lc_err = lc_data['magerr'][goodQualIndex]
+    except:
+        lc_mjd = lc_data['mjd']
+        lc_mag = lc_data['mag']
+        lc_err = lc_data['magerr']
 
     t_days = lc_mjd  # * u.day
     y_mags = lc_mag  # * u.mag

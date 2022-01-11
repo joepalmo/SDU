@@ -1,9 +1,11 @@
+from numpy.lib.nanfunctions import nanmax
 import pandas as pd
 import numpy as np
 import math
 import datetime as dt
 import matplotlib.pyplot as plt
 from astropy.io import ascii
+from astropy.table import Table
 import os
 
 # open source module found for converting MJD/JD to DateTimes
@@ -17,7 +19,7 @@ import glob
 
 # LC Time Sort Preprocessing Function
 
-def LC_timesort_preproc(df, resample_len='1d'):
+def LC_timesort_preproc(dataframe, resample_len='1d'):
     '''
     Function used to preprocess tabular lightcurve data before inputting them into sonoUno. This is
     done by resampling to a regular time-base and adding NaN values into the observation gaps, so 
@@ -34,6 +36,7 @@ def LC_timesort_preproc(df, resample_len='1d'):
     
 
     '''
+    df = dataframe.copy(deep=True)
     df['timestamp'] = df.mjd.map(jd.mjd_to_jd).map(jd.jd_to_datetime)
     df.sort_values(by='timestamp', inplace=True)
     df.reset_index(drop=True, inplace=True)
@@ -54,10 +57,10 @@ from scipy.signal import savgol_filter
 
 # LC Phase Sort Preprocessing Function
 
-def LC_phasesort_preproc(df, bins=None, rephased=False):
+def LC_phasesort_preproc(dataframe, bins=None, rephased=False):
     '''
     Function used to preprocess tabular lightcurve data before inputting them into sonoUno. This is
-    done by binning the observations by to phase and averaging magnitude observations. This is 
+    done by binning the observations by phase and averaging magnitude observations. This is 
     to ensure that the phase intervals are constant so that the sonoUno sound is played at a regular
     interval.
 
@@ -72,6 +75,7 @@ def LC_phasesort_preproc(df, bins=None, rephased=False):
     
 
     '''
+    df = dataframe.copy(deep=True)
     df.sort_values('phase', inplace=True)
     df.reset_index(drop=True, inplace=True)
     df = df[['phase', 'mag']]
@@ -103,9 +107,7 @@ def LC_phasesort_preproc(df, bins=None, rephased=False):
     return new_df
 
 
-
-
-def spectra_preproc(df, bins=None):
+def spectra_preproc(dataframe, bins=None):
     '''
     Function used to preprocess tabular spectral data before inputting them into sonoUno. This is
     done by binning the observations by wavelength and averaging flux observations. This is 
@@ -123,6 +125,7 @@ def spectra_preproc(df, bins=None):
     
 
     '''
+    df = dataframe.copy(deep=True)
     df.sort_values('wavelength', inplace=True)
     df.reset_index(drop=True, inplace=True)
     df = df[['wavelength', 'flux']]
@@ -160,13 +163,30 @@ def LC_phasefit_preproc(path_to_lc, bins=None, rephased=False):
     #load data into astropy table, sort by mjd, and remove phase
     data = ascii.read(path_to_lc, format='csv', fast_reader=False)
     data.sort('mjd')
-    data.remove_column('phase')
+    try:
+        data.remove_column('phase')
+    except:
+        pass
     
+    flc_data, LC_stat_properties = LCtools.process_LC(data, fltRange=5.0, detrend=True, detrend_deg=2)
     #Use LombScargle periodogram to find the best fit period (in days)
-    omega = LCtools.perdiodSearch(data)[0]['P'] 
+    omega = LCtools.perdiodSearch(flc_data)[0]['P'] 
+    print(omega)
     
+    #use QualFlag if the data has been processed with process_LC
+    try:
+        goodQualIndex = np.where(flc_data['QualFlag'] == 1)[0]
+        lc_mjd = flc_data['mjd'][goodQualIndex]
+        lc_mag = flc_data['mag'][goodQualIndex]
+        lc_err = flc_data['magerr'][goodQualIndex]
+    except:
+        lc_mjd = flc_data['mjd']
+        lc_mag = flc_data['mag']
+        lc_err = flc_data['magerr']
+
     #restructure data for input to AFD
-    data_tuple = (data['mjd'], data['mag'], data['magerr'],)
+    # data_tuple = (flc_data['mjd'], flc_data['mag'], flc_data['magerr'],)
+    data_tuple = (lc_mjd, lc_mag, lc_err,)
     
     #Run the Automatic Fourier Decomposition to find the best phase fit
     best_Nterms, best_phase_fit, best_y_fit, best_phased_t, best_resid, best_reduced_ChiSq, best_mtf = LCtools.AFD(data_tuple, omega)
@@ -195,6 +215,124 @@ def LC_phasefit_preproc(path_to_lc, bins=None, rephased=False):
         return rephase_df
     
     return df
+
+
+def qualFlagData(flc_data):
+    """
+    Flexible function used to filter data regardless of whether process_LC has been run yet. Data tuple
+    that can be input into AFD is also constructed.
+    """
+    try:
+        goodQualIndex = np.where(flc_data['QualFlag'] == 1)[0]
+        lc_mjd = flc_data['mjd'][goodQualIndex]
+        lc_mag = flc_data['mag'][goodQualIndex]
+        lc_err = flc_data['magerr'][goodQualIndex]
+        filtered_data = flc_data[goodQualIndex]
+    except:
+        lc_mjd = flc_data['mjd']
+        lc_mag = flc_data['mag']
+        lc_err = flc_data['magerr']
+        filtered_data = flc_data
+
+    data_tuple = (lc_mjd, lc_mag, lc_err)
+
+    return filtered_data, data_tuple
+
+def format_df(arr, bins, rephased):
+    """
+    Function used to format phased LC data into a pandas df that can be input into sonoUno. This means
+    binning, averaging, and extending x-axis across 2 phases.
+    """
+    # bin by phase -> 100 points
+    s, edges, _ = binned_statistic(arr[:,0],arr[:,1], statistic='mean', bins=bins)
+    bincenters = edges[:-1]+np.diff(edges)/2
+    
+    # 2 phases
+    bincenters = np.append(bincenters, bincenters+1)
+    s = np.append(s, s)
+    
+    #to df - name columns
+    new_arr = np.vstack((bincenters, s)).T
+    df = pd.DataFrame(new_arr, columns = ['Phase', 'Magnitude'])
+
+    if rephased is True:
+        rephase = df[df.Phase.between(0.505, 1.495)]['Magnitude'].to_numpy()
+        rephase = np.append(rephase, rephase)
+        rephase_arr = np.vstack((bincenters, rephase)).T
+        rephase_df = pd.DataFrame(rephase_arr, columns=['Phase', 'Magnitude'])
+
+        return rephase_df
+    
+    return df
+
+
+def phase_LC(data, bins=None, rephased=False, **kwargs):
+    '''
+    Function used to fit a phase curve to tabular LC data before inputting them into sonoUno. This is
+    done by using a LombScargle periodogram to obtain a period value, then using a Fourier Decomposition
+    to make the best fit. 
+
+    Inputs ----------------------
+        :param data: pandas df with columns mjd, mag, magerr, (and optional phase)
+        :type data: pandas DataFrame
+        :kwarg bins: phase bins to average over
+        :type bins: array-like
+        :kwarg rephased: if True, move the data over by 0.5 phases
+        :type rephased: boolean
+            
+    Returns ---------------------
+        phasefit_df - phase fit dataframe. Turn this into a .csv and input into sonoUno
+        phasesort_df - phase sorted dataframe. Turn this into a .csv and input into sonoUno
+        period - period in days
+    '''
+    # option to filter data or not
+    # example of a time we wouldn't want to filter would be for phasing data with random flares
+    flc = kwargs.pop("flc", False)
+    # process_LC inputs
+    detrend = kwargs.pop("detrend", False)
+    fltRange =  kwargs.pop("fltRange", 5.0)
+    detrend_deg = kwargs.pop("detrend_deg", 3)
+    Nmax = kwargs.pop("Nmax", 6)
+    omega = kwargs.pop("omega", None)
+
+    #pandas to astropy table, to be compatible with Ben's code. Sort by mjd, remove phase if applicable
+    lc_table = Table.from_pandas(data)   
+    lc_table.sort('mjd')
+    try:
+        lc_table.remove_column('phase')
+    except:
+        pass
+
+    #filter data and find period
+    if flc == True:
+        flc_data, LC_stat_properties = LCtools.process_LC(lc_table, fltRange=fltRange, detrend=detrend, detrend_deg=detrend_deg)
+    else:
+        flc_data = lc_table
+
+    #Use LombScargle periodogram to find the best fit period (in days)
+    filtered_data, data_tuple = qualFlagData(flc_data)
+
+    #determine period, or use input
+    if omega == None:
+        omega = LCtools.perdiodSearch(filtered_data)[0]['P'] 
+    else:
+        pass
+
+    #Run the Automatic Fourier Decomposition to find the best phase fit
+    best_Nterms, best_phase_fit, best_y_fit, best_phased_t, best_resid, best_reduced_ChiSq, best_mtf = LCtools.AFD(data_tuple, omega, Nmax=Nmax)
+
+    #stack phasefit into 2d array
+    phasefit_arr = np.vstack((best_phase_fit, best_y_fit)).T
+
+    #stack phasesort into 2d array
+    phasesort_arr = np.vstack((best_phased_t, data_tuple[1])).T
+
+    #restructure to be in sonoUno format
+    phasefit_df = format_df(phasefit_arr, bins=bins, rephased=rephased)
+    phasesort_df = format_df(phasesort_arr, bins=bins, rephased=rephased)
+    
+    return omega, phasesort_df, phasefit_df
+
 
 def phase_bins():
     bins = np.arange(0,1.01,0.01)
@@ -234,6 +372,20 @@ def plot_timesort(raw, preprocessed, **kwargs):
 
     return fig
 
+
+def plot_phased(phasesort_df, phasefit_df):
+    fig = plt.figure(figsize=(12,4))
+    plt.scatter(phasesort_df['Phase'], phasesort_df['Magnitude'], c='k', marker='o')
+    plt.plot(phasefit_df['Phase'], phasefit_df['Magnitude'], 'b', markeredgecolor='b', lw=2, fillstyle='top', linestyle='solid')
+    plt.gca().invert_yaxis()
+    plt.title("Phased LC")
+    plt.xlabel("Phase")
+    plt.ylabel("Magnitude")
+    fig.set_size_inches(8, 2.666666666)
+    fig.set_dpi(120)
+    fig.patch.set_facecolor('white')
+
+    return fig
 
 def plot_spectra(raw, preprocessed, **kwargs):
     raw_df = raw.copy(deep=True)

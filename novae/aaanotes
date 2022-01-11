@@ -1,0 +1,18 @@
+choos V band only
+reject upper limits
+need formatted print or else awk makes integer MJDs from some
+
+awk -F\, '$5~/V/ && $2!~/</{mjd=(1*$1-2400000);printf("%8.1f,%4.1f \n",mjd,$2)}' TPyx_LC_AAVSO.txt | sort -n | sed s/\ //g > TPyx_LC_AAVSO.csv
+
+
+requested optical spectrum from a woman in India 1/10/2021
+
+M. Pavana
+
+Hello,
+
+I appreciate your novel initiative. Please find enclosed the spectrum of T Pyx during its 2011 outburst. Please let me know if you need anything else.
+
+Thank you.
+
+ #T Pyx 16 Apr 2011-- JD: 2455668.08; time since discovery: 2.28 days,
