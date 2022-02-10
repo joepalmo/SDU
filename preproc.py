@@ -21,14 +21,14 @@ import glob
 
 def LC_timesort_preproc(dataframe, resample_len='1d'):
     '''
-    Function used to preprocess tabular lightcurve data before inputting them into sonoUno. This is
+    Function used to preprocess tabular light curve data before inputting them into sonoUno. This is
     done by resampling to a regular time-base and adding NaN values into the observation gaps, so 
     that the timing is correct and silences are observed.
 
     Inputs ----------------------
         :param df: dataframe with columns mjd, phase, and magnitude
         :type df: pd.Dataframe
-        :kwarg resample_len: time-base to resample to. String input that is date-time friendly
+        :kwarg resample_len: time-base to resample to. String input that is date-time friendly.
         :type resample_len: str
             
     Returns ---------------------
@@ -37,13 +37,22 @@ def LC_timesort_preproc(dataframe, resample_len='1d'):
 
     '''
     df = dataframe.copy(deep=True)
+    #create timestamp column
     df['timestamp'] = df.mjd.map(jd.mjd_to_jd).map(jd.jd_to_datetime)
+
+    #sort by datetime
     df.sort_values(by='timestamp', inplace=True)
     df.reset_index(drop=True, inplace=True)
     df.set_index('timestamp', inplace=True)
+
+    #change timestamp to DatetimeIndex for easy resampling
     df.index = pd.DatetimeIndex(df.index)
+
+    #bin/resample dataframe to chosen time-base 
     gaps = df.resample(resample_len).mean()
     gaps.reset_index(inplace=True)
+
+    #change datetime column back to MJD. Rename columns for input into sonoUno
     gaps['mjd_modified'] = gaps.timestamp.map(jd.datetime_to_jd).map(jd.jd_to_mjd)
     gaps = gaps[['mjd_modified', 'mag', 'mjd']]
     gaps.rename(columns={'mjd_modified':'Modified Julian Day',
@@ -115,7 +124,7 @@ def spectra_preproc(dataframe, bins=None):
     interval.
 
     Inputs ----------------------
-        :param df: dataframe with columns mjd, phase, and magnitude
+        :param df: dataframe with columns wavelength and flux
         :type df: pd.Dataframe
         :kwarg bins: bins to average over
         :type bins: array-like
@@ -335,10 +344,16 @@ def phase_LC(data, bins=None, rephased=False, **kwargs):
 
 
 def phase_bins():
+    """
+    To be passed as the 'bins' input to any of the phase related functions
+    """
     bins = np.arange(0,1.01,0.01)
     return bins
 
 def wavelength_bins():
+    """
+    To be passed as the 'bins' input to any of the spectra related functions
+    """
     bins = np.arange(3790,7200,10)
     return bins
 
